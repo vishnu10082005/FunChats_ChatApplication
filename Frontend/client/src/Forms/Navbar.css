@@ -1,0 +1,18 @@
+.NavBody {
+    background-color: #FFF8C6;
+    margin: auto;
+}
+.Navbar{
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    align-items: center;
+}
+.Profile{
+    /* margin: auto; */
+    display: flex;
+    gap: 60px;
+    /* width: 20%; */
+    align-items: center;
+}

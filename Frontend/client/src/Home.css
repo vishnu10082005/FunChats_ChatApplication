@@ -1,0 +1,40 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+.Add {
+    padding: 20px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    /* height: 80vh; */
+  }
+  .emogi{
+    animation: fadeIn 2s ease-in-out;
+
+  }
+    .welcome-text {
+    font-size: 2.5em;
+    color: #333;
+    margin-bottom: 20px;
+    animation: fadeIn 2s ease-in-out;
+
+  }
+  
+  .intro-text {
+    font-size: 1.2em;
+    color: #666;
+    line-height: 1.6;
+    margin-top: 5%;
+  }
+  
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
