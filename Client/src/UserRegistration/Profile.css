@@ -1,0 +1,37 @@
+.Navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #f8f8f8; 
+}
+
+.Logo img {
+  height: 70px; 
+}
+
+.Features {
+  display: flex;
+  align-items: center;
+}
+
+.Features svg, .Features button {
+  margin-left: 20px;
+  cursor: pointer;
+}
+
+.Features button {
+  padding: 10px;
+  background-color: #FF8A65;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+  text-align: center;
+}
+
+
+.Features svg:hover {
+  fill: #FF7043; 
+}
