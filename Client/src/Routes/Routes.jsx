@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 // import Login from './Login';
 import Chat from "../Chat/Chat";
 import ProfilePage from "../UserRegistration/Profile";
-import Forms from "../Forms";
+import Forms from "../UserRegistration/Forms";
 
 const AllRoutes = () => {
   return (
