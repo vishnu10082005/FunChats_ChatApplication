@@ -1,8 +1,8 @@
 import React from "react";
 import { Box, Container, Text } from "@chakra-ui/react";
 import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
-import Login from "./UserRegistration/Login";
-import Signup from "./UserRegistration/Signup";
+import Login from "./Login";
+import Signup from "./Signup";
 const Forms = () => {
   return (
     <div>

@@ -14,6 +14,7 @@ function Login() {
       if (response.data.success) {
         setCookie('uid', response.data.userId, { path: '/' });
         setCookie('isLoggedIn', true, { path: '/' });
+        setCookie('token', response.data.token, { path: '/' });
         alert('Login successful');
         navigate("/")
       } else {

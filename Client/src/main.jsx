@@ -4,9 +4,9 @@ import App from "./App.jsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { ChakraProvider } from "@chakra-ui/react";
-import ParentContext from "./Context.jsx";
+import ParentContext from "./Context/Context.jsx";
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+  
     <ChakraProvider>
       <BrowserRouter>
         <ParentContext>
@@ -14,5 +14,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </ParentContext>
       </BrowserRouter>
     </ChakraProvider>
-  </React.StrictMode>
+  
 );

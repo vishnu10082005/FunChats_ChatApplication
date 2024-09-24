@@ -27,8 +27,9 @@ const authenticateToken = (req, res, next) => {
       .json({ success: false, message: "Invalid token.", error });
   }
 };
+
 router.post("/chatAccess", authenticateToken, async (req, res) => {
-  const { userId } = req.body;
+  const  {userId}  = req.query;
   if (!userId) {
     console.log("UserId not send with the request.");
     res.status(400).json({ success: false });
@@ -65,12 +66,60 @@ router.post("/chatAccess", authenticateToken, async (req, res) => {
         "-password"
       );
       res.send({ fullChat });
+      console.log("Full Chat ",fullChat);
     } catch (error) {
       res.send({ error });
+      console.log(error)
     }
   }
 });
-router.get("/getChatAccess", authenticateToken, async (req, res) => {});
+
+router.get("/getChatAccess", authenticateToken, async (req, res) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    console.log("UserId param not sent with request");
+    return res.sendStatus(400);
+  }
+
+  var isChat = await Chat.find({
+    isGroupChat: false,
+    $and: [
+      { users: { $elemMatch: { $eq: req.user._id } } },
+      { users: { $elemMatch: { $eq: userId } } },
+    ],
+  })
+    .populate("users", "-password")
+    .populate("latestMessage");
+
+  isChat = await User.populate(isChat, {
+    path: "latestMessage.sender",
+    select: "name pic email",
+  });
+
+  if (isChat.length > 0) {
+    res.send(isChat[0]);
+  } else {
+    var chatData = {
+      chatName: "sender",
+      isGroupChat: false,
+      users: [req.user._id, userId],
+    };
+
+    try {
+      const createdChat = await Chat.create(chatData);
+      const FullChat = await Chat.findOne({ _id: createdChat._id }).populate(
+        "users",
+        "-password"
+      );
+      res.status(200).json(FullChat);
+    } catch (error) {
+      res.status(400);
+      throw new Error(error.message);
+    }
+  }
+});
+
 router.get("/fetchChats", authenticateToken, async (req, res) => {
   try {
     Chat.find({ users: { $elemMatch: { $eq: req.user.userId } } })
@@ -162,15 +211,14 @@ router.put("/groupRemove", authenticateToken, async (req, res) => {
       .populate("users", "-password")
       .populate("groupAdmin", "-password");
     if (!removed) {
-      res.status(404).json({message:"Chat not found"});
+      res.status(404).json({ message: "Chat not found" });
     } else {
       res.json(removed);
     }
   } catch (error) {
-    console.log("error",error)
-    res.send({"error":error})
+    console.log("error", error);
+    res.send({ error: error });
   }
-  
 });
 router.put("/groupadd", authenticateToken, async (req, res) => {
   //Add to group
@@ -187,13 +235,11 @@ router.put("/groupadd", authenticateToken, async (req, res) => {
       .populate("groupAdmin", "-password");
     if (!added) {
       res.status(404).json("Error");
-      
     } else {
       res.json(added);
     }
   } catch (error) {
     res.send(error);
   }
-  
 });
 module.exports = router;

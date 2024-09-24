@@ -19,7 +19,7 @@ app.use(bodyparser.urlencoded({ extended: true }));
 app.use(router)
 // MongoDB connection
 mongoose
-  .connect("mongodb+srv://Vishnu:vishnu2005@cluster0.z1rrgh7.mongodb.net/funchats", {
+  .connect(process.env.mongoUri, {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
   })
@@ -82,13 +82,13 @@ mongoose
 
 app.get("/getUser/:id",async(req,res)=>{
   try {
-  
     const user = await User.findById(req.params.id);
     res.send({message:user});
   } catch (error) {
     res.send({message:false,Error:error})
   }
 })
+
 app.get("/allUsers", authenticateToken, async (req, res) => {
   try {
     const keyWord = req.query.search
