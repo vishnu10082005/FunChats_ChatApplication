@@ -26,7 +26,7 @@ const ProfileModel = ({ user, children }) => {
       ) : (
         <IconButton
           display={{ base: "flex" }}
-          icon={<ViewIcon />}
+          icon={<ViewIcon width={"20%"}/>}
           onClick={onOpen}
         ></IconButton>
       )}
