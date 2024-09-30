@@ -5,6 +5,7 @@ const User = require("../Models/userModel");
 const jwt = require("jsonwebtoken");
 const { json } = require("body-parser");
 require("dotenv").config();
+const Message = require("../Models/messageModel.js");
 const authenticateToken = (req, res, next) => {
   const token = req.query.token;
   console.log(token);
@@ -28,8 +29,10 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// Create chat .
+
 router.post("/chatAccess", authenticateToken, async (req, res) => {
-  const  {userId}  = req.query;
+  const { userId } = req.query;
   if (!userId) {
     console.log("UserId not send with the request.");
     res.status(400).json({ success: false });
@@ -66,10 +69,10 @@ router.post("/chatAccess", authenticateToken, async (req, res) => {
         "-password"
       );
       res.send({ fullChat });
-      console.log("Full Chat ",fullChat);
+      console.log("Full Chat ", fullChat);
     } catch (error) {
       res.send({ error });
-      console.log(error)
+      console.log(error);
     }
   }
 });
@@ -180,12 +183,8 @@ router.put("/renameGroup", authenticateToken, async (req, res) => {
   const { chatId, chatName } = req.body;
   const updatedChat = await Chat.findByIdAndUpdate(
     chatId,
-    {
-      chatName,
-    },
-    {
-      new: true,
-    }
+    { chatName },
+    { new: true }
   )
     .populate("users", "-password")
     .populate("groupAdmin", "-password");
@@ -240,6 +239,52 @@ router.put("/groupadd", authenticateToken, async (req, res) => {
     }
   } catch (error) {
     res.send(error);
+  }
+});
+
+// Chatmessages Routes ;
+router.get("/getMessages/:chatId", authenticateToken, async (req, res) => {
+  try {
+    const messages = await Message.find({ chat: req.params.chatId })
+      .populate("sender", "name pic email")
+      .populate("chat");
+    res.json(messages);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+});
+
+router.post("/sendMessage", authenticateToken, async (req, res) => {
+  const { content, chatId } = req.body;
+
+  if (!content || !chatId) {
+    console.log("Invalid data passed into request");
+    return res.sendStatus(400);
+  }
+
+  var newMessage = {
+    sender: req.user.userId,
+    content: content,
+    chat: chatId,
+  };
+
+  try {
+    var message = await Message.create(newMessage);
+
+    message = await message.populate("sender", "name pic")
+    message = await message.populate("chat")
+    message = await User.populate(message, {
+      path: "chat.users",
+      select: "name pic email",
+    });
+
+    await Chat.findByIdAndUpdate(req.body.chatId, { latestMessage: message });
+
+    res.json(message);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
   }
 });
 module.exports = router;
