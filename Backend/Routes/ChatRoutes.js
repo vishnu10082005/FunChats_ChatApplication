@@ -8,7 +8,6 @@ require("dotenv").config();
 const Message = require("../Models/messageModel.js");
 const authenticateToken = (req, res, next) => {
   const token = req.query.token;
-  console.log(token);
   if (!token) {
     return res
       .status(401)
@@ -18,7 +17,6 @@ const authenticateToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
-    console.log(req.user);
     next();
   } catch (error) {
     // res.send({error: error})
@@ -69,7 +67,6 @@ router.post("/chatAccess", authenticateToken, async (req, res) => {
         "-password"
       );
       res.send({ fullChat });
-      console.log("Full Chat ", fullChat);
     } catch (error) {
       res.send({ error });
       console.log(error);
@@ -158,7 +155,6 @@ router.post("/group", authenticateToken, async (req, res) => {
     return res.status(400).json({ message: "More than 2 users required" });
   }
   users.push(req.user.userId);
-  console.log(users);
 
   try {
     // Create the group chat
