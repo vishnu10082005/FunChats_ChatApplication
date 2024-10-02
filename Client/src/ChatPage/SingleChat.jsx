@@ -15,8 +15,11 @@ import { getSender, getSenderFull } from "../Config/ChatLogic";
 import UpdateGroupChatModal from "../Chat/UpdateGroupChat/UpdateGroupChat";
 import axios from "axios";
 import "../App.css";
-import ScrollableChat from "../Chat/ScrollableChat";
+import io from "socket.io-client";
 
+import ScrollableChat from "../Chat/ScrollableChat";
+const ENDPOINT = "http://localhost:5000";
+var socket, selectedChatCompare;
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const { user, isSelectChat, setSelectChat, token } = useContext(AppContext);
   const [messages, setMessages] = useState([]);
@@ -38,7 +41,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             chatId: isSelectChat,
           }
         );
-        // socket.emit("new message", data);
+        socket.emit("new message", data);
         setMessages([...messages, data]);
         console.log(messages);
       } catch (error) {
@@ -65,7 +68,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       setMessages(data);
       setLoading(false);
 
-      // socket.emit("join chat", selectedChat._id);
+      socket.emit("join chat", isSelectChat._id);
     } catch (error) {
       toast({
         title: "Error Occured!",
@@ -79,8 +82,31 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   };
 
   useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    socket.on("connected", () => setSocketConnected(true));
+  });
+
+  useEffect(() => {
     fetchMessages();
+    selectedChatCompare=isSelectChat;
   }, [isSelectChat]);
+
+  useEffect(() => {
+    socket.on("message recieved", (newMessageRecieved) => {
+      if (
+        !selectedChatCompare || 
+        selectedChatCompare._id !== newMessageRecieved.chat._id
+      ) {
+        if (!notification.includes(newMessageRecieved)) {
+          setNotification([newMessageRecieved, ...notification]);
+          setFetchAgain(!fetchAgain);
+        }
+      } else {
+        setMessages([...messages, newMessageRecieved]);
+      }
+    });
+  });
 
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
@@ -160,7 +186,9 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
                   />
                 </div>
               ) : (
-                <><ScrollableChat messages={messages}/></>
+                <>
+                  <ScrollableChat messages={messages} />
+                </>
               )}
               <Input
                 variant="filled"
