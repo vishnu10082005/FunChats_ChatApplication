@@ -1,147 +1,66 @@
 const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const chats = require("./data"); // Assuming data.js exports an array of chat objects
-const Chat = require("./Models/chatModel");
-const router = require("./Routes/ChatRoutes");
-const User = require("./Models/userModel");
-const Message = require("./Models/messageModel");
-const jwt = require("jsonwebtoken");
+const connectDB = require("./config/db");
+const dotenv = require("dotenv");
+const userRoutes = require("./routes/userRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+const path = require("path");
+
+dotenv.config();
+connectDB();
 const app = express();
-const bodyparser = require("body-parser");
-require("dotenv").config();
-const PORT = process.env.PORT || 5000;
-// const jwtSecret =
-app.use(cors());
-app.use(express.json());
-app.use(bodyparser.json());
-app.use(bodyparser.urlencoded({ extended: true }));
-app.use(router);
-// MongoDB connection
-mongoose
-  .connect(process.env.mongoUri, {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
 
-app.post("/signUp", async (req, res) => {
-  const data = req.body;
-  try {
-    const checkUser = await User.findOne({ email: data.email });
-    if (checkUser) {
-      res.send({ message: false });
-    } else {
-      const newUser = new User(data);
-      await newUser.save();
-      res.send({ message: true });
-    }
-  } catch (error) {
-    console.error(error);
-    res.send({ message: error });
-  }
-});
+app.use(express.json()); // to accept json data
 
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (user && user.password === password) {
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      res.json({
-        success: true,
-        Message: true,
-        token: token,
-        userId: user._id,
-      });
-    } else {
-      res.json({
-        success: false,
-        Message: false,
-        error: "Invalid email or password",
-      });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, error: error });
-  }
-});
+// app.get("/", (req, res) => {
+//   res.send("API Running!");
+// });
 
-const authenticateToken = (req, res, next) => {
-  const token = req.query.token;
+app.use("/api/user", userRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/message", messageRoutes);
 
-  if (!token) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Access denied. No token provided." });
-  }
+// --------------------------deployment------------------------------
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    console.log(req.user);
-    next();
-  } catch (error) {
-    return res.status(403).json({ success: false, message: "Invalid token." });
-  }
-};
+const __dirname1 = path.resolve();
 
-app.get("/getUser/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    res.send({ message: user });
-  } catch (error) {
-    res.send({ message: false, Error: error });
-  }
-});
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname1, "/frontend/build")));
 
-app.get("/allUsers", authenticateToken, async (req, res) => {
-  try {
-    const keyWord = req.query.search
-      ? {
-          $or: [
-            { name: { $regex: req.query.search, $options: "i" } },
-            { email: { $regex: req.query.search, $options: "i" } },
-          ],
-        }
-      : {};
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
+  );
+} else {
+  app.get("/", (req, res) => {
+    res.send("API is running..");
+  });
+}
 
-    const users = await User.find(keyWord).find({
-      _id: { $ne: req.user.userId },
-    });
-    // console.log("userid",req.user)
-    res.status(200).json({
-      success: true,
-      users,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
-  }
-});
+// --------------------------deployment------------------------------
 
-// Chat Routes
+// Error Handling middlewares
+app.use(notFound);
+app.use(errorHandler);
 
-const server = app.listen(5000, () =>
-  console.log(`Server running on port http://localhost:5000`)
+const PORT = process.env.PORT;
+
+const server = app.listen(
+  PORT,
+  console.log(`Server running on PORT ${PORT}...`.yellow.bold)
 );
+
 const io = require("socket.io")(server, {
   pingTimeout: 60000,
   cors: {
-    origin: "http://localhost:5173",
+    origin: "http://localhost:3000",
+    // credentials: true,
   },
 });
 
 io.on("connection", (socket) => {
   console.log("Connected to socket.io");
-
   socket.on("setup", (userData) => {
-    console.log("setup",userData._id);
     socket.join(userData._id);
     socket.emit("connected");
   });
@@ -150,6 +69,8 @@ io.on("connection", (socket) => {
     socket.join(room);
     console.log("User Joined Room: " + room);
   });
+  socket.on("typing", (room) => socket.in(room).emit("typing"));
+  socket.on("stop typing", (room) => socket.in(room).emit("stop typing"));
 
   socket.on("new message", (newMessageRecieved) => {
     var chat = newMessageRecieved.chat;
@@ -162,5 +83,9 @@ io.on("connection", (socket) => {
       socket.in(user._id).emit("message recieved", newMessageRecieved);
     });
   });
+
+  socket.off("setup", () => {
+    console.log("USER DISCONNECTED");
+    socket.leave(userData._id);
+  });
 });
-// module.exports = authenticateToken
